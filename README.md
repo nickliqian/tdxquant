@@ -1,7 +1,8 @@
-# TdxQuant Claude Code Skill
+# TdxQuant Skill
 
 TdxQuant（通达信量化）全能开发助手。基于 tqcenter Python API 帮助用户完成量化策略开发全流程。
-*简单的策略脚本基本可以一次成功，如果生成的有问题，可以联系我帮忙优化skills。
+
+**简单的策略脚本基本可以一次成功，如果生成的有问题，可以联系我帮忙优化skills。**
 
 ## 功能特性
 
