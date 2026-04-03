@@ -24,14 +24,32 @@ pip install vectorbt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 ## 快速开始
 
-### 1. 初始化连接
+### 1. 安装 Skill 到 Claude Code
+
+将本 skill 目录放置到 Claude Code 的 skills 目录下：
+
+**方法一：直接克隆**
+```bash
+cd ~/.claude/skills/
+git clone https://github.com/nickliqian/tdxquant.git
+```
+
+**方法二：手动下载**
+1. 下载本仓库的所有文件
+2. 将整个 `tdxquant` 文件夹复制到 `~/.claude/skills/` 目录（或者 `~/.kiro/skills/`）
+3. 确保目录结构为：`~/.claude/skills/tdxquant/SKILL.md`
+
+**验证安装**
+重启 Claude Code 后，在对话中提到"量化策略"、"选股"、"TdxQuant"等关键词时，skill 会自动激活。
+
+### 2. 初始化连接
 
 ```python
 from tqcenter import tq
 tq.initialize(__file__)
 ```
 
-### 2. 编写策略
+### 3. 编写策略
 ![金叉策略](tdxpng/1.png)
 ![涨停选股](tdxpng/2.png)
 ![回测效果](tdxpng/3.png)
