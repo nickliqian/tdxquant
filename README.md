@@ -18,10 +18,12 @@ TdxQuant（通达信量化）全能开发助手。基于 tqcenter Python API 帮
 - Python 3.11+（建议 3.13）
 - 通达信金融终端（支持 TQ 策略功能）
 - 依赖包:
+```
 pip install numpy -i https://pypi.tuna.tsinghua.edu.cn/simple
 pip install pandas -i https://pypi.tuna.tsinghua.edu.cn/simple
 pip install backtrader -i https://pypi.tuna.tsinghua.edu.cn/simple
 pip install vectorbt -i https://pypi.tuna.tsinghua.edu.cn/simple
+```
 
 ## 快速开始
 
