@@ -20,10 +20,12 @@ description: >
 ## 策略开发流程
 
 1. 初始化连接
-2. 获取数据（K线/快照/财务/板块成份股）
-3. 信号计算（均线/因子/公式）
-4. 执行操作（回测/预警/写入板块/下单）
-5. 结果输出（print_to_tdx/send_message）
+2. 确认股票池来源（生成选股/回测代码前，先确认用户要从哪个板块选股，明确板块名称和 block_type 参数；如果用户没指定，推荐沪深300或中证500作为起点）
+3. 获取数据（K线/快照/财务/板块成份股）
+4. 信号计算（均线/因子/公式）
+5. 执行操作（回测/预警/写入板块/下单）
+6. 结果输出（print_to_tdx/send_message）
+7. 如果是回测策略，询问用户是否需要生成配套的可视化脚本（收益曲线、回撤图等）
 
 ## 常用策略模式
 
@@ -155,6 +157,37 @@ for code, data in fd.items():
 
 print(f"筛选出 {len(selected)} 只股票")
 tq.send_user_block(block_code='CWXG', stocks=selected, show=True)
+```
+
+### 行业轮动选股
+
+```python
+from tqcenter import tq
+tq.initialize(__file__)
+
+# 获取所有行业板块
+sectors = tq.get_stock_list('16', list_type=1)  # 研究行业一级
+
+# 获取各板块近5日涨幅，筛选前3
+import pandas as pd
+sector_perf = {}
+for s in sectors:
+    code = s['Code']
+    try:
+        bk = tq.get_bkjy_value(stock_list=[code], field_list=['BK1'], start_time='', end_time='')
+        if code in bk and not bk[code].empty:
+            sector_perf[code] = float(bk[code].iloc[-1].get('BK1', 0))
+    except Exception:
+        continue
+
+top3 = sorted(sector_perf, key=sector_perf.get, reverse=True)[:3]
+
+# 从前3行业中获取成份股
+all_codes = []
+for sec in top3:
+    all_codes.extend(tq.get_stock_list_in_sector(sec))
+
+# ... 对 all_codes 做进一步选股/回测 ...
 ```
 
 ## 常用辅助函数

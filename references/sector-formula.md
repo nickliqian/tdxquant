@@ -49,9 +49,40 @@ get_sector_list(list_type: int = 0) -> List
 get_stock_list_in_sector(block_code: str, block_type: int = 0, list_type: int = 0) -> List
 ```
 
-- block_type=0: 传入板块代码或名称（默认）
-- block_type=1: 传入自定义板块简称
-- 支持板块名称如 '通达信88'、'钛金属' 等
+### block_type 参数
+
+- `block_type=0`（默认）：传入板块指数代码或板块名称
+  - 板块名称：如 `'通达信88'`、`'煤炭开采'`、`'钛金属'`
+  - 板块代码：如 `'880301'`
+- `block_type=1`：传入自定义板块简称
+  - 用户自建板块：如 `'重点关注'`
+  - 自选股：`'ZXG'`
+  - 临时条件股：`'TJG'`
+
+### list_type 参数
+
+- `list_type=0`（默认）：只返回代码列表 → `['000545.SZ', '000629.SZ']`
+- `list_type=1`：返回代码和名称 → `[{'Code': '000545.SZ', 'Name': '金浦钛业'}, ...]`
+
+### 示例
+
+```python
+# 系统板块（按名称）
+codes = tq.get_stock_list_in_sector('煤炭开采')
+
+# 系统板块（按代码）
+codes = tq.get_stock_list_in_sector('880301')
+
+# 自定义板块
+codes = tq.get_stock_list_in_sector('重点关注', block_type=1)
+
+# 自选股
+codes = tq.get_stock_list_in_sector('ZXG', block_type=1)
+
+# 需要股票名称时
+codes = tq.get_stock_list_in_sector('通达信88', list_type=1)
+# → [{'Code': '000545.SZ', 'Name': '金浦钛业'}, ...]
+```
 
 ## get_user_sector
 
