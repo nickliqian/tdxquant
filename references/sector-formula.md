@@ -231,7 +231,6 @@ formula_process_mul_zb(
 
 含 SMA 递归计算的指标（KDJ、RSI、WR 等），count 设置过小会导致初始值不准确。
 经验参考：日线 count ≥ 250，周线 count ≥ 120。高精度需求可设 `count=-1` 从头计算（耗时较长）。
-```
 
 ## 市场后缀常量
 
