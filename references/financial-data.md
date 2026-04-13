@@ -67,6 +67,8 @@ get_financial_data_by_date(
 
 获取股票交易数据（需先下载股票数据包）。
 
+**注意：** 部分 GP 字段（如 GP02 龙虎榜、GP06 陆股通等）需要在通达信客户端手动下载对应数据包后才能返回有效值，否则返回 None。使用前建议先用单只股票测试目标字段是否有数据。
+
 ```python
 get_gpjy_value(
     stock_list: List[str] = [],

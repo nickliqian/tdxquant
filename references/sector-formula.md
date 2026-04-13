@@ -200,6 +200,39 @@ formula_process_mul_zb(
 )
 ```
 
+### count 与 end_time 互斥（重要）
+
+当 `count > 0` 时，`end_time` 参数会被忽略，实际返回最新 N 根 K 线的计算结果。
+- 需要指定时间范围：设 `count=0`，同时传 `start_time` + `end_time`
+- 需要最新 N 条：设 `count=N`，`start_time`/`end_time` 可忽略
+
+### 返回结构（与单只调用不同）
+
+批量调用返回结构的外层 key 是股票代码，而非 `'Data'`：
+
+```python
+# 批量 formula_process_mul_zb 返回：
+{
+    '600519.SH': {'DIF': [值列表], 'DEA': [值列表], 'MACD': [值列表]},
+    '000858.SZ': {'DIF': [值列表], 'DEA': [值列表], 'MACD': [值列表]}
+}
+
+# 对比：单只 formula_zb 返回：
+{'Data': {'DIF': [值列表], 'DEA': [值列表], 'MACD': [值列表]}}
+
+# 批量 formula_process_mul_xg 返回：
+{
+    '600519.SH': {'条件名': ['1', '0', '1']},
+    '000858.SZ': {'条件名': ['0', '0', '1']}
+}
+```
+
+### SMA 收敛注意
+
+含 SMA 递归计算的指标（KDJ、RSI、WR 等），count 设置过小会导致初始值不准确。
+经验参考：日线 count ≥ 250，周线 count ≥ 120。高精度需求可设 `count=-1` 从头计算（耗时较长）。
+```
+
 ## 市场后缀常量
 
 详见 [constants.md](../references/constants.md)。

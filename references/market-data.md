@@ -57,6 +57,7 @@ get_more_info(stock_code: str = '', field_list: List = []) -> Dict
 实时指标：ZTPrice(涨停价), DTPrice(跌停价), fHSL(换手率), Zsz(总市值亿), Ltsz(流通市值亿)。
 涨幅系列：ZAF(当日), ZAFYesterday, ZAFPre5/10/20/30/60, ZAFYear, ZAFPreOneYear。
 资金流：Zjl(主买净额万), Zjl_HB(主力净流入万), TotalBVol/TotalSVol, FCAmo(封单额万)。
+**注意：资金流字段（Zjl、Zjl_HB、TotalBVol、TotalSVol 等）仅盘中实时有效，盘后返回值全为 0。目前 API 无历史资金流数据接口。**
 估值：DynaPE(动态PE), StaticPE_TTM, PB_MRQ, DYRatio(股息率)。
 涨停：EverZTCount(连板天), YearZTDay(年涨停天数), ConZAFDateNum(连涨天数)。
 其他：MA5Value, HisHigh/HisLow(52周), IPO_Price, FreeLtgb(自由流通万股), IsKzz(是否可转债)。

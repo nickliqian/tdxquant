@@ -199,14 +199,33 @@ for sec in top3:
 
 ## 关键约束与常见陷阱
 
+### 数据获取
+
 - `get_market_data` 单次最多 24000 条，分钟线需分批获取
 - `get_market_data` 返回的 DataFrame 是 index=stock_list、columns=time_list，与 pandas 常见的"行=时间、列=股票"相反。用 `tq.price_df()` 转置为常规格式
 - `subscribe_hq` 最多订阅 100 条
 - `send_warn` 的 reason_list 每个元素最多 25 汉字；注意参数名是 `volum_list`（非 volume_list）
-- `formula_set_data` 的 count 最大 24000
-- 批量公式（formula_process_mul_xg/zb）无需提前 set_data
 - 复权类型有两套写法：行情 API 用字符串 `'none'`/`'front'`/`'back'`；公式 API 用整数 `0`/`1`/`2`
 - 周期：`1m` `5m` `15m` `30m` `60m` `1d` `1w` `1mon` `1q` `1hy` `tick`
+
+### 数据可用性陷阱
+
+- `get_more_info` 的资金流字段（Zjl 主买净额、Zjl_HB 主力净流入、TotalBVol/TotalSVol 等）仅盘中实时有效，盘后返回值全为 0。如需历史资金流数据，目前 API 无直接支持
+- `get_gpjy_value` 的部分 GP 字段（如 GP02 龙虎榜、GP06 陆股通等）需要在通达信客户端手动下载对应数据包后才能返回有效值，否则返回 None。使用前建议先用单只股票测试字段是否有数据
+
+### 公式调用陷阱
+
+- `formula_set_data` / `formula_set_data_info` 的 count 最大 24000
+- 批量公式（formula_process_mul_xg/zb）无需提前 set_data
+- **count 与 end_time 互斥（重要）：** `formula_process_mul_xg/zb` 中，当 `count > 0` 时，`end_time` 参数会被忽略，实际返回的是最新的 N 根 K 线的计算结果。如需指定时间范围，必须设 `count=0` 并同时传 `start_time` + `end_time`
+- **批量 vs 单只返回结构不同（重要）：**
+  - 单只调用 `formula_zb` 返回：`{'Data': {'指标名': [值列表]}}`
+  - 单只调用 `formula_xg` 返回：`{'Data': {'条件名': [值列表]}}`
+  - 批量调用 `formula_process_mul_zb` 返回：`{stock_code: {'指标名': [值列表]}}`
+  - 批量调用 `formula_process_mul_xg` 返回：`{stock_code: {'条件名': [值列表]}}`
+  - 注意：批量返回的外层 key 是股票代码，不是 `'Data'`
+- **条件选股 vs 技术指标公式区分：** 通达信公式分为技术指标（formula_zb）和条件选股（formula_xg）两种类型。区分方法：技术指标公式输出连续数值序列（如 MACD 输出 DIF/DEA/MACD），条件选股公式输出 0/1 布尔信号。如果不确定公式类型，可以先用 `formula_zb` 尝试，如果报错或返回空再换 `formula_xg`
+- **SMA 收敛问题：** 使用含 SMA（递归移动平均）的指标（如 KDJ、RSI、WR 等）进行批量计算时，count 设置过小会导致初始值不准确。经验参考：日线建议 count ≥ 250（约一年交易日），周线建议 count ≥ 120。如果对精度要求高，可设 `count=-1` 从头计算，但会显著增加耗时
 
 ## API 参考（按需加载）
 
