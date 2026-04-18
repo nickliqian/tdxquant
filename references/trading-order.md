@@ -11,7 +11,7 @@ stock_account(account: str = '', account_type: str = 'STOCK') -> int
 | account | str | 资金账号，空字符串时默认当前登录账户 |
 | account_type | str | 账号类型：`'STOCK'` 股票交易、`'CREDIT'` 信用交易、`'FUTURE'` 期货交易、`'OPTION'` 期权交易 |
 
-- 返回值 > 0 为有效句柄，< 0 为无效句柄
+- 返回值 ≥ 0 为有效句柄（0 也是有效的），< 0 为无效句柄
 - **所有交易函数调用前，必须先调用此函数获取 account_id**
 - 获取句柄前须在通达信客户端登录对应账号
 

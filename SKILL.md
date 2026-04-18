@@ -16,7 +16,50 @@ description: >
 
 - Python 3.7+（建议 3.13），64位
 - 需预先启动通达信金融终端（支持 TQ 策略功能）
-- 所有策略必须先初始化：`from tqcenter import tq; tq.initialize(__file__)`
+- tqcenter.py 位于通达信安装目录 `PYPlugins\user\` 下，导入前须将该路径加入 sys.path
+
+## 初始化与路径配置
+
+### 自动获取通达信安装目录（推荐）
+
+```python
+import sys, os, winreg
+
+# 从注册表获取通达信安装目录
+key_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\通达信金融终端64"
+with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key_path) as key:
+    tdx_root, _ = winreg.QueryValueEx(key, "InstallLocation")
+
+# 必须用 insert(0, ...) 确保优先加载通达信目录的 tqcenter.py
+sys.path.insert(0, os.path.join(tdx_root, 'PYPlugins', 'user'))
+
+from tqcenter import tq
+tq.initialize(__file__)
+```
+
+### 手动指定路径（已知安装目录时）
+
+```python
+import sys
+sys.path.insert(0, 'E:/App/new_tdx_test64/PYPlugins/user')
+
+from tqcenter import tq
+tq.initialize(__file__)
+```
+
+### 关闭连接
+
+```python
+tq.close()  # 手动关闭，程序退出时也会自动调用
+```
+
+### 初始化注意事项
+
+- `tq.initialize(__file__)` 中 `__file__` 作为策略唯一标识，同一路径不能同时运行两个实例
+- ErrorId=`'12'`：已有同名策略运行（会打印警告但不报错）
+- ErrorId=`'6'`/`'7'`：连接断开，会自动触发重新初始化
+- 使用 `sys.path.insert(0, ...)` 而非 `append()`，避免加载到其他同名模块
+- tqcenter.py 会在其上上级目录（`PYPlugins/`）自动定位 `TPythClient.dll`
 
 ## 策略开发流程
 
@@ -301,7 +344,7 @@ if buy_list:
 
 ### 交易下单
 
-- **必须先获取句柄：** 所有交易函数（order_stock/query_stock_asset/query_stock_positions/query_stock_orders/cancel_order_stock）调用前，必须先调用 `tq.stock_account()` 获取 account_id，且返回值 > 0 才有效
+- **必须先获取句柄：** 所有交易函数（order_stock/query_stock_asset/query_stock_positions/query_stock_orders/cancel_order_stock）调用前，必须先调用 `tq.stock_account()` 获取 account_id，且返回值 ≥ 0 才有效（0 也是有效句柄，< 0 才是失败）
 - **实盘 vs 模拟盘返回值不同：** `order_stock` 返回 Value=1 表示实盘待用户确认（非失败），Value=2 表示模拟盘直接成功，Value=0 才是失败。代码中判断下单结果时注意区分
 - **实盘自动下单需券商开通：** 默认实盘下单会弹窗让用户确认，要实现全自动交易需联系券商开通支持 TQ 的版本
 - **A股 T+1 限制：** 今日买入的股票 CanUseVol 为 0，当日不可卖出。卖出前应检查 `query_stock_positions` 返回的 CanUseVol
@@ -312,11 +355,11 @@ if buy_list:
 ### 数据获取
 
 - `get_market_data` 单次最多 24000 条，分钟线需分批获取
-- `get_market_data` 返回的 DataFrame 是 index=stock_list、columns=time_list，与 pandas 常见的"行=时间、列=股票"相反。用 `tq.price_df()` 转置为常规格式
+- `get_market_data` 返回 `{field: DataFrame(行=时间, 列=股票代码)}`，已经是常规格式。`tq.price_df()` 用于从返回的 dict 中提取单个字段为独立 DataFrame，并自动处理日期索引和缺失值
 - `subscribe_hq` 最多订阅 100 条
 - `send_warn` 的 reason_list 每个元素最多 25 汉字；注意参数名是 `volum_list`（非 volume_list）
 - 复权类型有两套写法：行情 API 用字符串 `'none'`/`'front'`/`'back'`；公式 API 用整数 `0`/`1`/`2`
-- 周期：`1m` `5m` `15m` `30m` `60m` `1d` `1w` `1mon` `1q` `1hy` `tick`
+- 周期：`1m` `5m` `15m` `30m` `1h`/`60m` `1d` `1w` `1mon` `1q` `1hy` `1y` `tick`
 
 ### 数据可用性陷阱
 
@@ -336,6 +379,18 @@ if buy_list:
   - 注意：批量返回的外层 key 是股票代码，不是 `'Data'`
 - **条件选股 vs 技术指标公式区分：** 通达信公式分为技术指标（formula_zb）和条件选股（formula_xg）两种类型。区分方法：技术指标公式输出连续数值序列（如 MACD 输出 DIF/DEA/MACD），条件选股公式输出 0/1 布尔信号。如果不确定公式类型，可以先用 `formula_zb` 尝试，如果报错或返回空再换 `formula_xg`
 - **SMA 收敛问题：** 使用含 SMA（递归移动平均）的指标（如 KDJ、RSI、WR 等）进行批量计算时，count 设置过小会导致初始值不准确。经验参考：日线建议 count ≥ 250（约一年交易日），周线建议 count ≥ 120。如果对精度要求高，可设 `count=-1` 从头计算，但会显著增加耗时
+
+## 故障排除
+
+| 现象 | 原因与解决 |
+|------|-----------|
+| "TQ数据接口初始化失败" | 确保通达信客户端已运行并登录；用 `sys.path.insert(0, ...)` 而非 `append()`；确认 `PYPlugins/` 下有 `TPyth.dll` 和 `TPythClient.dll` |
+| ErrorId='12' | 已有同名策略运行（同一 `__file__` 路径），关闭旧实例或换文件名 |
+| 菜单一直显示"正在开启TQ策略..." | 检查是否有防火墙弹窗，允许访问即可 |
+| 指标值前面是 None | `count` 不够覆盖公式最大回溯参数，如 `MA(C,20)` 至少需要 20 根 K 线 |
+| `send_warn` 报 ValueError | 确认 `count > 0`；确认各 list 长度 ≥ count；确认 price_list/close_list/volum_list 元素为纯数字字符串 |
+| 批量公式选股结果比客户端少 | `count` 太小，增大到覆盖公式所需的最大回溯 K 线数 |
+| Module Not Found | 确认 `PYPlugins/user` 路径正确，使用绝对路径 |
 
 ## API 参考（按需加载）
 

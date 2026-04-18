@@ -97,3 +97,52 @@ print_to_tdx(
 ```
 
 df_list 和 jsn_filenames 长度必须与 vertical/horizontal 指定的组数一致。
+
+## SIGNALS_TQ 公式系统
+
+通过 `send_bt_data` 发送序列数据后，可在通达信公式管理器中创建技术指标公式，使用 `SIGNALS_TQ(ID, TYPE)` 函数引用数据并在 K 线图上展示。
+
+### 函数语法
+
+```
+SIGNALS_TQ(ID, TYPE)
+```
+
+| 参数 | 说明 |
+|------|------|
+| ID | data_list 子列表中的位置序号（1~16） |
+| TYPE | 0=不平滑处理；1=平滑（无数据周期返回上一周期值）；2=无数据则为 0 |
+
+### 通达信公式示例
+
+在通达信公式管理器中新建公式：
+
+```
+{技术指标}
+MA5:SIGNALS_TQ(1,0);
+MA10:SIGNALS_TQ(2,0);
+
+{交易信号}
+BUY_SIGNAL:=SIGNALS_TQ(3,0);
+SELL_SIGNAL:=SIGNALS_TQ(4,0);
+
+{绘制交易信号图标}
+DRAWICON(BUY_SIGNAL, LOW, 1);
+DRAWICON(SELL_SIGNAL, HIGH, 2);
+```
+
+### 配合 send_bt_data 使用
+
+```python
+# 发送 MA5、MA10 和买卖信号
+tq.send_bt_data(
+    stock_code='688318.SH',
+    time_list=['20260120', '20260121'],
+    data_list=[
+        ['136.60', '131.74', '1', '0'],   # 位置1=MA5, 2=MA10, 3=买信号, 4=卖信号
+        ['135.30', '131.48', '0', '1']
+    ],
+    count=2
+)
+# 在通达信中用 SIGNALS_TQ(1,0)~SIGNALS_TQ(4,0) 引用上述数据
+```
