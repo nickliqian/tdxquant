@@ -109,15 +109,17 @@ get_gb_info(stock_code: str = '', date_list: List[str] = [], count: int = 1)
 
 返回 `[{Date, Zgb(总股本), Ltgb(流通股本)}]`。date_list 须从小到大。
 
-## get_cb_info — 可转债信息
+## get_kzz_info — 可转债信息
 
 ```python
-get_cb_info(stock_code: str = '', field_list: List[str] = [])
+get_kzz_info(stock_code: str = '', field_list: List[str] = []) -> Dict
 ```
 
-字段：HSCode(正股代码), ZGPrice(转股价), ZGRate(转股比例), CurRate(票面利率),
-EndDate(到期日), EndPrice(到期赎回价), ForceRedeem(强赎价), PutBack(回售价),
-RestScope(剩余规模万元), HSScore/KZZScore(评级)。
+返回字段：KZZCode(可转债代码), HSCode(正股代码), ZGPrice(转股价), ZGRate(转股比率%),
+CurRate(当期利率), RestScope(剩余规模万), PutBack(回售触发价), ForceRedeem(强赎触发价),
+ZGDate(转股日), EndDate(到期日), EndPrice(到期价), RealValue(纯债价值),
+ExpireYield(到期收益率%), KZZScore(可转债评级), HSScore(主体评级),
+AGPrice(正股当前价), KZZPrice(可转债当前价), KZZYj(溢价率), ZGValue(转股价值)。
 
 ## get_trading_dates — 交易日列表
 
@@ -230,20 +232,6 @@ get_trackzs_etf_info(zs_code: str = '') -> List[Dict]
 etfs = tq.get_trackzs_etf_info(zs_code='000300.CSI')
 # [{'Code': '510300.SH', 'Name': '沪深300ETF', 'NowPrice': '4.123', ...}]
 ```
-
-## get_kzz_info — 获取可转债信息
-
-```python
-get_kzz_info(stock_code: str = '', field_list: List[str] = []) -> Dict
-```
-
-> 注：官方新版 API 名为 `get_kzz_info`，旧版为 `get_cb_info`，功能相同。
-
-返回字段：KZZCode(可转债代码), HSCode(正股代码), ZGPrice(转股价), ZGRate(转股比率%),
-CurRate(当期利率), RestScope(剩余规模万), PutBack(回售触发价), ForceRedeem(强赎触发价),
-ZGDate(转股日), EndDate(到期日), EndPrice(到期价), RealValue(纯债价值),
-ExpireYield(到期收益率%), KZZScore(可转债评级), HSScore(主体评级),
-AGPrice(正股当前价), KZZPrice(可转债当前价), KZZYj(溢价率), ZGValue(转股价值)。
 
 ## exec_to_tdx — 调用客户端功能
 
