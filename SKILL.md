@@ -2,11 +2,12 @@
 name: tdxquant
 description: >
   TdxQuant（通达信量化）全能开发助手。基于 tqcenter Python API 帮助用户完成量化策略开发全流程：
-  数据获取、选股策略、回测验证、实时监控、条件预警、公式调用、板块管理。
+  数据获取、选股策略、回测验证、实时监控、条件预警、公式调用、板块管理、交易下单。
   触发场景：用户提到"量化策略"、"选股"、"回测"、"TdxQuant"、"通达信量化"、"tqcenter"、
   "K线"、"因子"、"板块"、"金叉死叉"、"实时监控"、"行情订阅"、"预警"、"subscribe"、
   "盯盘"、"涨停"、"tq.get_"、"tq.send_"、"tq.formula_"、"FN字段"、"GP字段"、
-  "price_df"、"get_full_tick"等关键词时使用。
+  "price_df"、"get_full_tick"、"下单"、"买入"、"卖出"、"撤单"、"委托"、"持仓"、
+  "order_stock"、"stock_account"、"自动交易"、"实盘交易"等关键词时使用。
 ---
 
 # TdxQuant 全能开发助手
@@ -23,7 +24,7 @@ description: >
 2. 确认股票池来源（生成选股/回测代码前，先确认用户要从哪个板块选股，明确板块名称和 block_type 参数；如果用户没指定，推荐沪深300或中证500作为起点）
 3. 获取数据（K线/快照/财务/板块成份股）
 4. 信号计算（均线/因子/公式）
-5. 执行操作（回测/预警/写入板块/下单）
+5. 执行操作（回测/预警/写入板块/交易下单）
 6. 结果输出（print_to_tdx/send_message）
 7. 如果是回测策略，询问用户是否需要生成配套的可视化脚本（收益曲线、回撤图等）
 
@@ -190,6 +191,105 @@ for sec in top3:
 # ... 对 all_codes 做进一步选股/回测 ...
 ```
 
+### 交易下单（实盘/模拟盘）
+
+```python
+from tqcenter import tq
+from tqcenter import tqconst
+tq.initialize(__file__)
+
+# 第一步：获取账户句柄（所有交易操作的前置步骤）
+myAccount = tq.stock_account(account="1190008847", account_type="STOCK")
+if myAccount < 0:
+    print("获取账户句柄失败，请检查客户端是否已登录")
+    exit()
+
+# 第二步：查询可用资金
+asset = tq.query_stock_asset(account_id=myAccount)
+cash = float(asset['Cash'])
+print(f"可用资金: {cash:.2f}")
+
+# 第三步：查询当前持仓
+positions = tq.query_stock_positions(account_id=myAccount)
+pos_dict = {p['Code']: p for p in positions}
+
+# 第四步：下单买入
+order_res = tq.order_stock(
+    account_id=myAccount,
+    stock_code="688318.SH",
+    order_type=tqconst.STOCK_BUY,
+    order_volume=200,
+    price_type=tqconst.PRICE_MY,
+    price=160.0
+)
+print(order_res)
+# Value=1: 实盘待确认  Value=2: 模拟盘直接成功  Value=0: 失败
+
+# 第五步：查询委托状态
+orders = tq.query_stock_orders(account_id=myAccount, stock_code="688318.SH")
+for o in orders:
+    print(f"委托编号:{o['Wtbh']} 状态:{o['Status']} 成交:{o['CjVol']}/{o['WtVol']}")
+
+# 第六步：撤单（如需要）
+if orders:
+    cancel_res = tq.cancel_order_stock(
+        account_id=myAccount,
+        stock_code=orders[0]['Code'],
+        order_id=orders[0]['Wtbh']
+    )
+    print(cancel_res)
+```
+
+### 选股信号 + 自动下单（完整流程）
+
+```python
+from tqcenter import tq
+from tqcenter import tqconst
+tq.initialize(__file__)
+
+# 获取账户
+myAccount = tq.stock_account(account="", account_type="STOCK")  # 空=当前登录账户
+
+# 查可用资金
+asset = tq.query_stock_asset(account_id=myAccount)
+cash = float(asset['Cash'])
+
+# 查当前持仓，避免重复买入
+positions = tq.query_stock_positions(account_id=myAccount)
+held_codes = {p['Code'] for p in positions if float(p['TotalVol']) > 0}
+
+# 选股逻辑（示例：MACD金叉）
+codes = tq.get_stock_list_in_sector('通达信88')
+buy_list = []
+for code in codes:
+    if code in held_codes:
+        continue
+    tq.formula_set_data_info(stock_code=code, stock_period='1d', count=50, dividend_type=1)
+    result = tq.formula_zb(formula_name='MACD', formula_arg='12,26,9')
+    dif = result['Data']['DIF']
+    dea = result['Data']['DEA']
+    if len(dif) >= 2 and dif[-2] < dea[-2] and dif[-1] > dea[-1]:
+        buy_list.append(code)
+
+# 等额分配资金下单
+if buy_list:
+    per_stock_cash = cash / len(buy_list)
+    for code in buy_list:
+        snap = tq.get_market_snapshot(stock_code=code)
+        price = float(snap['Now'])
+        volume = int(per_stock_cash / price / 100) * 100  # 整手
+        if volume >= 100:
+            res = tq.order_stock(
+                account_id=myAccount,
+                stock_code=code,
+                order_type=tqconst.STOCK_BUY,
+                order_volume=volume,
+                price_type=tqconst.PRICE_MY,
+                price=price
+            )
+            print(f"下单 {code}: {volume}股 @ {price}, 结果: {res}")
+```
+
 ## 常用辅助函数
 
 详见 [market-data.md](references/market-data.md) 中的 price_df 和 get_full_tick 章节。
@@ -198,6 +298,16 @@ for sec in top3:
 - `tq.get_full_tick(stock_code)` — 获取完整 tick 数据，返回字段与 get_market_snapshot 类似，常用于订阅回调
 
 ## 关键约束与常见陷阱
+
+### 交易下单
+
+- **必须先获取句柄：** 所有交易函数（order_stock/query_stock_asset/query_stock_positions/query_stock_orders/cancel_order_stock）调用前，必须先调用 `tq.stock_account()` 获取 account_id，且返回值 > 0 才有效
+- **实盘 vs 模拟盘返回值不同：** `order_stock` 返回 Value=1 表示实盘待用户确认（非失败），Value=2 表示模拟盘直接成功，Value=0 才是失败。代码中判断下单结果时注意区分
+- **实盘自动下单需券商开通：** 默认实盘下单会弹窗让用户确认，要实现全自动交易需联系券商开通支持 TQ 的版本
+- **A股 T+1 限制：** 今日买入的股票 CanUseVol 为 0，当日不可卖出。卖出前应检查 `query_stock_positions` 返回的 CanUseVol
+- **委托数量必须为整手（100股）：** 科创板/北交所最低 200 股，买入时需按 `int(cash / price / 100) * 100` 取整
+- **委托查询仅限当日：** `query_stock_orders` 只能查当日委托，无法查历史委托
+- **返回值均为字符串：** query_stock_asset/query_stock_positions 返回的数值字段（Balance、Cash、Cbj、TotalVol 等）均为 str 类型，计算前需 `float()` 或 `int()` 转换
 
 ### 数据获取
 
@@ -234,5 +344,6 @@ for sec in top3:
 - [行情与基础数据](references/market-data.md) — get_market_data, get_market_snapshot, get_stock_info, get_more_info 等
 - [财务与交易数据](references/financial-data.md) — get_financial_data(FN1-584), get_gpjy_value(GP01-46), get_bkjy_value, get_scjy_value, get_gp_one_data 等
 - [板块管理与公式调用](references/sector-formula.md) — get_stock_list, get_stock_list_in_sector, send_user_block, formula_zb/xg/exp, formula_process_mul 等
+- [交易下单](references/trading-order.md) — stock_account, order_stock, query_stock_asset, query_stock_positions, query_stock_orders, cancel_order_stock 等
 - [订阅与通知](references/subscribe-notify.md) — subscribe_hq, send_warn, send_message, send_file, print_to_tdx 等
 - [常量枚举](references/constants.md) — 市场后缀, 复权类型, K线周期, market参数值

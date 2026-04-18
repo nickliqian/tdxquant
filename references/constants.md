@@ -43,6 +43,56 @@
 | 1q | 季线 | 1hy | 半年线 |
 | tick | 分笔数据 | | |
 
+## 交易常量 (tqconst)
+
+### 委托类型 (order_type)
+
+| 常量 | 值 | 含义 | 适用 |
+|------|---|------|------|
+| tqconst.STOCK_BUY | 0 | 买入 | 股票 |
+| tqconst.STOCK_SELL | 1 | 卖出 | 股票 |
+| tqconst.CREDIT_BUY | 0 | 担保品买入 | 信用 |
+| tqconst.CREDIT_SELL | 1 | 担保品卖出 | 信用 |
+| tqconst.CREDIT_FIN_BUY | 69 | 融资买入 | 信用 |
+| tqconst.CREDIT_SLO_SELL | 70 | 融券卖出 | 信用 |
+
+### 报价类型 (price_type)
+
+| 常量 | 值 | 含义 |
+|------|---|------|
+| tqconst.PRICE_MY | 0 | 自填价格（限价委托） |
+| tqconst.PRICE_SJ | 1 | 市价（具体市价方式在客户端系统设置中配置） |
+| tqconst.PRICE_ZTJ | 2 | 涨停价 |
+| tqconst.PRICE_DTJ | 3 | 跌停价 |
+
+### 账户类型 (account_type)
+
+| 值 | 含义 |
+|------|------|
+| STOCK | 股票交易 |
+| CREDIT | 信用交易 |
+| FUTURE | 期货交易 |
+| OPTION | 期权交易 |
+
+### 委托状态码
+
+| 常量 | 值 | 含义 |
+|------|---|------|
+| WTSTATUS_NULL | 0 | 无效单 |
+| WTSTATUS_NOCJ | 1 | 未成交 |
+| WTSTATUS_PARTCJ | 2 | 部分成交 |
+| WTSTATUS_ALLCJ | 3 | 全部成交 |
+| WTSTATUS_BCBC | 4 | 部分成交部分撤单 |
+| WTSTATUS_ALLCD | 5 | 全部撤单 |
+
+### 买卖标志 (BSFlag)
+
+| 值 | 含义 |
+|---|------|
+| 0 | 买 |
+| 1 | 卖 |
+| -1 | 撤单 |
+
 ## get_stock_list 的 market 参数
 
 | 值 | 含义 | 值 | 含义 |
